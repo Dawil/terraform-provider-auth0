@@ -6,6 +6,8 @@ import (
 
 func Provider() *schema.Provider {
     return &schema.Provider{
-        ResourcesMap: map[string]*schema.Resource{},
+        DataSourcesMap: map[string]*schema.Resource{
+            "auth0_client": dataSourceAuth0Client(),
+        },
     }
 }
