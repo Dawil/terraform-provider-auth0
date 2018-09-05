@@ -1,7 +1,6 @@
 package main
 
 import (
-//    "errors"
     "io/ioutil"
     "fmt"
     "bytes"
@@ -34,12 +33,11 @@ func dataSourceAuth0Client() *schema.Resource {
     }
 }
 
-func dataSourceAuth0ClientRead(d *schema.ResourceData, meta interface{}) error {
-    clientId := d.Get("client_id").(string)
-    d.SetId(clientId)
-    domain := d.Get("domain").(string)
-    clientSecret := d.Get("client_secret").(string)
-
+func requestAccessToken(
+    clientId string,
+    clientSecret string,
+    domain string,
+) map[string]interface{} {
     body := map[string]string{
         "grant_type": "client_credentials",
         "client_id": clientId,
@@ -62,11 +60,14 @@ func dataSourceAuth0ClientRead(d *schema.ResourceData, meta interface{}) error {
     b, _ := ioutil.ReadAll(resp.Body)
     var respbody map[string]interface{}
     json.Unmarshal(b, &respbody)
+    return respbody
+}
 
-    // get access token
-    accessToken := respbody["access_token"].(string)
-
-    // get client and set attributes
+func getClient(
+    domain string,
+    clientId string,
+    accessToken string,
+) map[string]interface{} {
     client := &http.Client{}
     req, _ := http.NewRequest(
         "GET",
@@ -88,15 +89,33 @@ func dataSourceAuth0ClientRead(d *schema.ResourceData, meta interface{}) error {
             accessToken,
         ),
     )
-    res2, _ := client.Do(req)
-    b2, _ := ioutil.ReadAll(res2.Body)
-    //out := new(bytes.Buffer)
-    //out.ReadFrom(res2.Body)
-    var respbody2 map[string]interface{}
-    json.Unmarshal(b2, &respbody2)
+    resp, _ := client.Do(req)
+    buffer, _ := ioutil.ReadAll(resp.Body)
 
-    d.Set("name", respbody2["name"].(string))
+    var respbody map[string]interface{}
+    json.Unmarshal(buffer, &respbody)
+    return respbody
+}
 
-    //return errors.New(out.String())
+func dataSourceAuth0ClientRead(d *schema.ResourceData, meta interface{}) error {
+    clientId := d.Get("client_id").(string)
+    d.SetId(clientId)
+    domain := d.Get("domain").(string)
+    clientSecret := d.Get("client_secret").(string)
+
+    accessToken := requestAccessToken(
+        clientId,
+        clientSecret,
+        domain,
+    )["access_token"].(string)
+
+    client := getClient(
+        domain,
+        clientId,
+        accessToken,
+    )
+
+    d.Set("name", client["name"].(string))
+
     return nil
 }
