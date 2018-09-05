@@ -17,14 +17,6 @@ func dataSourceAuth0Client() *schema.Resource {
                 Type: schema.TypeString,
                 Required: true,
             },
-            "domain": {
-                Type: schema.TypeString,
-                Required: true,
-            },
-            "client_secret": {
-                Type: schema.TypeString,
-                Required: true,
-            },
             "name": {
                 Type: schema.TypeString,
                 Computed: true,
@@ -98,10 +90,10 @@ func getClient(
 }
 
 func dataSourceAuth0ClientRead(d *schema.ResourceData, meta interface{}) error {
-    clientId := d.Get("client_id").(string)
+    clientId := meta.(*Config).ClientId
     d.SetId(clientId)
-    domain := d.Get("domain").(string)
-    clientSecret := d.Get("client_secret").(string)
+    domain := meta.(*Config).Domain
+    clientSecret := meta.(*Config).ClientSecret
 
     accessToken := requestAccessToken(
         clientId,
