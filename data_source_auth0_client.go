@@ -90,13 +90,14 @@ func getClient(
 }
 
 func dataSourceAuth0ClientRead(d *schema.ResourceData, meta interface{}) error {
-    clientId := meta.(*Config).ClientId
-    d.SetId(clientId)
+    providerClientId := meta.(*Config).ClientId
     domain := meta.(*Config).Domain
     clientSecret := meta.(*Config).ClientSecret
+    clientId := d.Get("client_id").(string)
+    d.SetId(clientId)
 
     accessToken := requestAccessToken(
-        clientId,
+        providerClientId,
         clientSecret,
         domain,
     )["access_token"].(string)
